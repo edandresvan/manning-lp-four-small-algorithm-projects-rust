@@ -1,9 +1,12 @@
-use std::{fmt::Display, time::Instant};
+use std::{
+  fmt::Display,
+  time::{Duration, Instant},
+};
 
 /// Number of rows of the board.
-const NUM_ROWS: usize = 8;
+const NUM_ROWS: usize = 5;
 /// Number of columns of the boards.
-const NUM_COLS: usize = 8;
+const NUM_COLS: usize = 7;
 /// Signed number of rows of the board.
 const INUM_ROWS: i32 = NUM_ROWS as i32;
 /// Signed number of columns of the board.
@@ -28,6 +31,7 @@ const OFFSETS: [[i32; 2]; 8] = [
 
 /// Type of our of the knight.
 #[allow(dead_code)]
+#[derive(Debug)]
 enum TourKind {
   /// An open tour.
   OpenTour,
@@ -91,10 +95,16 @@ fn find_tour(
       // In an closed tour, the final move must be at the starting square.
       //    Iterate over the list of valid moves from the knight's current location and
       //    look for at least one of such next moves puts the knight's at the starting
-      //    square. Use Rust any() function predicate.
-      TourKind::ClosedTour => get_valid_moves(*board, cur_row, cur_col)
-        .iter()
-        .any(|&possible_move| possible_move == (0, 0)),
+      //    square that contains the very first move, that is 0.
+      //    Use Rust any() function predicate.
+      TourKind::ClosedTour => {
+        get_valid_moves(*board, cur_row, cur_col)
+          .iter()
+          .any(|&possible_move| {
+            board[possible_move.0 as usize][possible_move.1 as usize]
+              == SquareStatus::Visited(0)
+          })
+      }
     };
   }
 
@@ -103,7 +113,6 @@ fn find_tour(
     board[possible_move.0 as usize][possible_move.1 as usize] =
       SquareStatus::Visited(num_visited as i32);
     if find_tour(board, possible_move.0, possible_move.1, num_visited + 1) {
-      // println!("{} {}", possible_move.0, possible_move.1);
       return true;
     }
     board[possible_move.0 as usize][possible_move.1 as usize] = SquareStatus::Unvisited;
@@ -111,8 +120,32 @@ fn find_tour(
   false
 }
 
+/// Shows the results to the user.
+///
+/// # Arguments
+///
+/// * `board`: Current board.
+/// * `duration`: Time duration that took trying to find a solution.
+/// * `successful`: Indicates whether or not a solution was found.
+fn show_results(
+  board: &[[SquareStatus; NUM_COLS]; NUM_ROWS],
+  duration: Duration,
+  successful: bool,
+) {
+  println!("Board: Rows: {} Columns {}", NUM_ROWS, NUM_COLS);
+  println!("Kind of Tour: {:?}", KNIGHT_TOUR_KIND);
+  println!("Time: {:?}", duration);
+  if successful {
+    println!("A knight's tour was successly found!");
+  } else {
+    println!("Could not find a tour.");
+  }
+
+  dump_board(board);
+}
+
 /// Displays the board on screen.
-fn dump_board(board: [[SquareStatus; NUM_COLS]; NUM_ROWS]) {
+fn dump_board(board: &[[SquareStatus; NUM_COLS]; NUM_ROWS]) {
   for r in 0..NUM_ROWS {
     for c in 0..NUM_COLS {
       print!("{:02} ", board[r][c]);
@@ -206,13 +239,6 @@ fn main() {
   let start = Instant::now();
   let success = find_tour(&mut board, 0, 0, 1);
   let duration = start.elapsed();
-  println!("Time: {:?}", duration);
 
-  if success {
-    println!("Success!");
-  } else {
-    println!("Could not find a tour.");
-  }
-
-  dump_board(board);
+  show_results(&board, duration, success);
 }
