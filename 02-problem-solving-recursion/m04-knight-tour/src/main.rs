@@ -4,9 +4,9 @@ use std::{
 };
 
 /// Number of rows of the board.
-const NUM_ROWS: usize = 5;
+const NUM_ROWS: usize = 8;
 /// Number of columns of the boards.
-const NUM_COLS: usize = 7;
+const NUM_COLS: usize = 8;
 /// Signed number of rows of the board.
 const INUM_ROWS: i32 = NUM_ROWS as i32;
 /// Signed number of columns of the board.
@@ -136,7 +136,7 @@ fn show_results(
   println!("Kind of Tour: {:?}", KNIGHT_TOUR_KIND);
   println!("Time: {:?}", duration);
   if successful {
-    println!("A knight's tour was successly found!");
+    println!("A knight's tour was successfully found!");
   } else {
     println!("Could not find a tour.");
   }
@@ -145,6 +145,10 @@ fn show_results(
 }
 
 /// Displays the board on screen.
+/// 
+/// # Arguments
+/// 
+/// * `board`: The board to be displayed on screen.
 fn dump_board(board: &[[SquareStatus; NUM_COLS]; NUM_ROWS]) {
   for r in 0..NUM_ROWS {
     for c in 0..NUM_COLS {
@@ -231,7 +235,7 @@ fn main() {
   // Create a NUM_ROWS x NUM_COLS array with all entries Initialized to UNVISITED.
   let mut board = [[SquareStatus::Unvisited; NUM_COLS]; NUM_ROWS];
 
-  // // Start at board[0][0].
+  // Start at board[0][0].
 
   board[0][0] = SquareStatus::Visited(0);
 
