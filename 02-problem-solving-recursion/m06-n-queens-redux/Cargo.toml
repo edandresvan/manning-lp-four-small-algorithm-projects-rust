@@ -1,5 +1,5 @@
 [package]
-name = "m05-n-queens"
+name = "m06-n-queens-redux"
 version = "0.1.0"
 edition = "2021"
 authors = ["Eder Andrés Ávila Niño"]

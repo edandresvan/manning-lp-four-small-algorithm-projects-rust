@@ -4,7 +4,7 @@ use std::{
 };
 
 /// Number of rows of the board.
-const NUM_ROWS: usize = 5;
+const NUM_ROWS: usize = 20;
 /// Number of columns of the boards.
 const NUM_COLS: usize = NUM_ROWS;
 
@@ -29,6 +29,20 @@ impl Display for SquareStatus {
       Self::Empty => "•".fmt(f),
     }
   }
+}
+
+/// Represents a strategy to solve the N-Queens problem.
+#[derive(Debug)]
+#[allow(dead_code)]
+enum Strategy {
+  /// Every possible queen placement is tried.
+  Exhaustive,
+  /// Place a queen counting how many others has been placed.
+  Counting,
+  /// Place a queen in squares that other queens cannot attack.
+  Attacks,
+  /// Place a queen column by column.
+  Redux,
 }
 
 /// Determines whether the given specified series of squares contains at most one queen.
@@ -140,6 +154,57 @@ fn board_is_legal(board: &[[SquareStatus; NUM_COLS]; NUM_ROWS]) -> bool {
   true
 }
 
+/// Determines whether the board is legal using the redux improvement.
+///
+/// # Arguments
+///
+/// * `board`: Board that you want to determine if it is legal.
+///
+/// # Returns
+///
+/// * `true`: If the entire board is legal (every series is legal).
+/// * `false`: Otherwise.
+fn board_is_legal_redux(
+  board: &[[SquareStatus; NUM_COLS]; NUM_ROWS],
+  row_queen: i32,
+) -> bool {
+  // See if each row is legal.
+  // Increment the row index
+
+  if !series_is_legal(board, row_queen, 0, 0, 1) {
+    return false;
+  }
+
+  // See if diagonals down to the right are legal.
+  // Increment row and column index by the same amount
+  for r in 0..NUM_ROWS as i32 {
+    if !series_is_legal(board, r, 0, 1, 1) {
+      return false;
+    }
+  }
+  for c in 0..NUM_COLS as i32 {
+    if !series_is_legal(board, 0, c, 1, 1) {
+      return false;
+    }
+  }
+
+  // See if diagonals down to the left are legal.
+  // Decrement row and column index by the same amount
+  for r in 0..NUM_ROWS as i32 {
+    if !series_is_legal(board, r, NUM_ROWS as i32 - 1, 1, -1) {
+      return false;
+    }
+  }
+  for c in 0..NUM_COLS as i32 {
+    if !series_is_legal(board, 0, c, 1, -1) {
+      return false;
+    }
+  }
+
+  // If we survived this long, then the board is legal.
+  true
+}
+
 /// Determines if the board is legal and with a solution.
 ///
 /// # Arguments
@@ -169,7 +234,7 @@ fn board_is_a_solution(board: &[[SquareStatus; NUM_COLS]; NUM_ROWS]) -> bool {
   num_queens == NUM_ROWS
 }
 
-/// Tries to the place a queen at the specified location.///
+/// Tries to the place a queen at the specified location.
 ///
 /// # Arguments
 ///
@@ -225,6 +290,56 @@ fn place_queens_1(
   false
 }
 
+// Try to place a queen in this column.
+// Return true if we find a legal board.
+
+/// Tries to the place a queen at the specified column.
+///
+/// # Arguments
+///
+/// * `board`: Current board arrangement with  previously positioned queens.
+/// * `c`: Column where to place the queen.
+///
+/// # Returns
+///
+/// * `true`: If a legal board is found.
+/// * `false`: Otherwise.
+fn place_queens_4(
+  board: &mut [[SquareStatus; NUM_COLS]; NUM_ROWS],
+  r: i32,
+  c: i32,
+) -> bool {
+  // Every row has been explored.
+  // Check if a queen has been assigned to every column
+  if c == NUM_ROWS as i32 {
+    return board_is_legal_redux(board, r);
+  }
+
+  // There are some columns still to explore.
+  // Check if the current solution is still legal.
+  if c < NUM_ROWS as i32 && !board_is_legal_redux(board, r) {
+    return false;
+  }
+
+  // Here, a queen should be assigned to the column c
+  for r in 0..NUM_ROWS {
+    board[r][c as usize] = SquareStatus::Queen;
+
+    // Call recursively to assign a queen to the next column
+    if place_queens_4(board, r as i32, c + 1) {
+      return true;
+    }
+
+    // Backtrack the move. Mark the square as empty
+    board[r][c as usize] = SquareStatus::Empty;
+  }
+
+  // Here, it was not possible to place a queen in a valid row in this column.
+  // There is no solution for the given board arrangement.
+
+  false
+}
+
 /// Shows the results to the user.
 ///
 /// # Arguments
@@ -269,16 +384,24 @@ fn main() {
 
   let start = Instant::now();
 
-  // Here, there are three strategies to choose from:
+  // Here, there are four strategies to choose from:
   // - place_queens_1: exhaustive search
   // - place_queens_2: queen counting
   // - place_queens_3: attacking squares
-  let success = place_queens_1(&mut board, 0, 0);
-  // let success = place_queens_2(&mut board, 0, 0, 0);
-  //let success = place_queens_3(& mut board);
+  // - place_queens_4: queens redux
+  let start_row: i32 = 0;
+  let start_column: i32 = 0;
+  let strategy = Strategy::Redux;
+
+  let success: bool = match strategy {
+    Strategy::Exhaustive => place_queens_1(&mut board, start_row, start_column),
+    Strategy::Counting => place_queens_2(&mut board, &mut 0, start_row, start_column),
+    Strategy::Attacks => place_queens_3(&mut board),
+    Strategy::Redux => place_queens_4(&mut board, start_row, start_column),
+  };
 
   let duration = start.elapsed();
-
+  println!("Strategy: {:?}", strategy);
   show_results(&board, duration, success);
 }
 
@@ -289,12 +412,12 @@ fn main() {
 // Return true if we find a legal board.
 fn place_queens_2(
   board: &mut [[SquareStatus; NUM_COLS]; NUM_ROWS],
-  mut num_placed: i32,
+  num_placed: &mut i32,
   r: i32,
   c: i32,
 ) -> bool {
   // See if we have placed all of the queens.
-  if num_placed == NUM_ROWS as i32 {
+  if *num_placed == NUM_ROWS as i32 {
     // See if this is a solution.
     return board_is_a_solution(board);
   }
@@ -322,14 +445,14 @@ fn place_queens_2(
   // Try placing a queen here and
   // recursively assigning the next square.
   board[r as usize][c as usize] = SquareStatus::Queen;
-  num_placed += 1;
+  *num_placed += 1;
   if place_queens_2(board, num_placed, next_r, next_c) {
     return true;
   }
 
   // That didn't work so remove this queen.
   board[r as usize][c as usize] = SquareStatus::Empty;
-  num_placed -= 1;
+  *num_placed -= 1;
 
   // If we get here, then there is no solution from
   // the board position before this function call.
@@ -348,7 +471,7 @@ fn place_queens_3(board: &mut [[SquareStatus; NUM_COLS]; NUM_ROWS]) -> bool {
 
   // Call do_place_queens_3.
   let mut num_placed = 0;
-  do_place_queens_3(board, num_placed, 0, 0, &mut num_attacking)
+  do_place_queens_3(board, &mut num_placed, 0, 0, &mut num_attacking)
 }
 
 // Try placing a queen at position [r][c].
@@ -357,13 +480,13 @@ fn place_queens_3(board: &mut [[SquareStatus; NUM_COLS]; NUM_ROWS]) -> bool {
 // Return true if we find a legal board.
 fn do_place_queens_3(
   board: &mut [[SquareStatus; NUM_COLS]; NUM_ROWS],
-  mut num_placed: i32,
+  num_placed: &mut i32,
   r: i32,
   c: i32,
   num_attacking: &mut [[i32; NUM_COLS]; NUM_ROWS],
 ) -> bool {
   // See if we have placed all of the queens.
-  if num_placed == NUM_ROWS as i32 {
+  if *num_placed == NUM_ROWS as i32 {
     // See if this is a solution.
     return board_is_a_solution(board);
   }
@@ -393,7 +516,7 @@ fn do_place_queens_3(
     // Try placing a queen here and
     // recursively assigning the next square.
     board[r as usize][c as usize] = SquareStatus::Queen;
-    num_placed += 1;
+    *num_placed += 1;
 
     // Increment the attack counts for this queen.
     adjust_attack_counts(num_attacking, r, c, 1);
@@ -404,7 +527,7 @@ fn do_place_queens_3(
 
     // That didn't work so remove this queen.
     board[r as usize][c as usize] = SquareStatus::Empty;
-    num_placed -= 1;
+    *num_placed -= 1;
     adjust_attack_counts(num_attacking, r, c, -1);
   }
 
