@@ -4,10 +4,6 @@ version = "0.1.0"
 edition = "2021"
 authors = ["Eder Andrés Ávila Niño"]
 
-[[bin]]
-name = "m02-fibonacci"
-path = "src/solution.rs"
-
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
