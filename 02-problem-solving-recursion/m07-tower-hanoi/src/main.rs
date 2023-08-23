@@ -1,5 +1,5 @@
 /// Number of disks to move in the tower of Hanoi problem.
-const NUM_DISKS: usize = 12;
+const NUM_DISKS: usize = 64;
 
 /// Represents a disk of the tower of Hanoi problem.
 #[derive(Copy, Clone, Debug, PartialEq)]
@@ -98,6 +98,7 @@ fn move_disks(
   }
   // Move the top disk from_post to to_post. (
   move_disk(posts, from_post, to_post);
+  draw_posts(posts);
 
   // We need to move more than one disk
   if num_to_move > 1 {
